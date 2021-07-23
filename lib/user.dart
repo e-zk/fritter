@@ -1,15 +1,36 @@
+import 'dart:typed_data';
+
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fritter/constants.dart';
 import 'package:fritter/database/entities.dart';
+import 'package:fritter/database/repository.dart';
 import 'package:fritter/home_model.dart';
 import 'package:fritter/ui/errors.dart';
 import 'package:fritter/ui/futures.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 import 'package:sqflite/sqflite.dart';
 
-import 'database/repository.dart';
-import 'profile/profile.dart';
+ExtendedImage createUserAvatar(String? uri, double size) {
+  if (uri == null) {
+    return ExtendedImage.memory(Uint8List.fromList([]));
+  } else {
+    return ExtendedImage.network(
+      // TODO: This can error if the profile image has changed... use SWR-like
+      uri.replaceAll('normal', '200x200'),
+      width: size,
+      height: size,
+      loadStateChanged: (state) {
+        switch (state.extendedImageLoadState) {
+          case LoadState.failed:
+            return Icon(Icons.error);
+          default:
+            return state.completedWidget;
+        }
+      },
+    );
+  }
+}
 
 class UserAvatar extends StatelessWidget {
   final String? uri;
@@ -19,25 +40,7 @@ class UserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var uri = this.uri;
-    if (uri == null) {
-      return Container(width: size, height: size);
-    } else {
-      return ExtendedImage.network(
-        // TODO: This can error if the profile image has changed... use SWR-like
-        uri.replaceAll('normal', '200x200'),
-        width: size,
-        height: size,
-        loadStateChanged: (state) {
-          switch (state.extendedImageLoadState) {
-            case LoadState.failed:
-              return Icon(Icons.error);
-            default:
-              return state.completedWidget;
-          }
-        },
-      );
-    }
+    return createUserAvatar(uri, size);
   }
 }
 
